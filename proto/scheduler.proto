@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+package scheduler;
+
+option go_package = "qabot-scheduler-go/pb;pb";
+option java_package = "com.example.proto.scheduler";
+option java_multiple_files = true;
+
+// === Queries and Tasks === //
+
+/**
+ *  NOTE: Session and Task are DIFFERENT!!!
+ *      Session contains all context in a user session.
+ *      Task is an independent task, corresponding to user's single purpose.
+ *  e.g:
+ *      User asks a few question about RAG, there are:
+ *          only 1 session
+ *          a few tasks
+ */
+
+// === Public Query API Begin === //
+
+message QueryRequest {
+    int64 session_id = 1;
+    string query = 2;
+}
+
+message QueryResponse {
+    int64 session_id = 1;
+    string reply = 2;
+}
+
+message QueryResponseChunk {
+    int64 session_id = 1;
+    string delta = 2;
+    bool is_finished = 3;
+}
+
+// === Public Query API End === //
+
+// === Internal Task API Begin === //
+
+// The request payload containing the query for single task
+message TaskRequest {
+    int64 task_id = 1;
+    string query = 2;
+}
+
+// The response stream chunk for LLM streaming
+message TaskResponseChunk {
+    int64 task_id = 1;
+    string delta = 2;
+    bool is_finished = 3;
+}
+
+// === Internal Task API End === //
+
+// Keeping hello in the scheduler is a bad idea. I am considering move it to HelloService.
+message HelloRequest {
+    string msg = 1;
+}
+
+message HelloResponse {
+    string msg = 1;
+}
+
+service Scheduler {
+    // Called by gateway only
+    rpc Query(QueryRequest) returns (QueryResponse);
+    rpc ScheduleTaskStream (TaskRequest) returns (stream TaskResponseChunk);    
+}
+
+service Hello {
+    rpc Hello (HelloRequest) returns (HelloResponse);
+}
